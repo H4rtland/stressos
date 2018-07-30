@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mkobjects-pod
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mkobjects
+  template:
+    metadata:
+      labels:
+        app: mkobjects
+    spec:
+      containers:
+      - name: mkobjects-container
+        image: thartland/stressos:lancs
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: "150m"
+          limits:
+            cpu: "150m"
+        env:
+          - name: PYTHONUNBUFFERED
+            value: "0"
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: lancscreds
+                key: AWS_ACCESS_KEY_ID
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: lancscreds
+                key: AWS_SECRET_ACCESS_KEY
+          - name: BUCKET_NAME
+            value: "tgh_jul30"
+          - name: ENDPOINT_HOSTNAME
+            value: "vault.ecloud.co.uk"
+          - name: ENDPOINT_PORT
+            value: "443"
+          - name: OBJ_MEAN_KB
+            value: "2000"
+          - name: OBJ_STDDEV_KB
+            value: "50"
+          - name: NUM_THREADS
+            value: "1"
