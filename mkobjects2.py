@@ -23,62 +23,33 @@ NODE = platform.node()
 LOG_SERVER_ADDR = "py-dev.lancs.ac.uk"
 LOG_SERVER_PORT = 5050
 
-ENDPOINT_HOSTNAME = os.environ.get("ENDPOINT_HOSTNAME")
-ENDPOINT_PORT = os.environ.get("ENDPOINT_PORT")
-BUCKET_NAME = os.environ.get("BUCKET_NAME")
-NUM_THREADS = os.environ.get("NUM_THREADS")
+bad_env_var = False
 
-OBJ_MEAN_KB = os.environ.get("OBJ_MEAN_KB")
-OBJ_STDDEV_KB = os.environ.get("OBJ_STDDEV_KB")
+def getenv(name, is_int=False):
+    global bad_env_var
+    value = os.environ.get(name)
+    if value is None:
+        logging.critical("Missing environment variable {}".format(name))
+        bad_env_var = True
+    elif is_int:
+        if not value.isdigit():
+            logging.critical("{} is not an integer value")
+            bad_env_var = True
+        else:
+            value = int(value)
+    return value
+    
 
-missing_var = False
+ENDPOINT_HOSTNAME = getenv("ENDPOINT_HOSTNAME")
+ENDPOINT_PORT = getenv("ENDPOINT_PORT", is_int=True)
+BUCKET_NAME = getenv("BUCKET_NAME")
+NUM_THREADS = getenv("NUM_THREADS", is_int=True)
 
-if ENDPOINT_HOSTNAME is None:
-    logging.critical("Missing environment variable ENDPOINT_HOSTNAME")
-    missing_var = True
-
-if ENDPOINT_PORT is None:
-    logging.critical("Missing environment variable ENDPOINT_PORT")
-    missing_var = True
-elif not ENDPOINT_PORT.isdigit():
-    logging.critical("ENDPOINT_PORT is not an integer value")
-    missing_var = True
-else:
-    ENDPOINT_PORT = int(ENDPOINT_PORT)
-
-if BUCKET_NAME is None:
-    logging.critical("Missing environment variable BUCKET_NAME")
-    missing_var = True
-
-if NUM_THREADS is None:
-    logging.critical("Missing environment variable NUM_THREADS")
-    missing_var = True
-elif not NUM_THREADS.isdigit():
-    logging.critical("NUM_THREADS is not an integer value")
-    missing_var = True
-else:
-    NUM_THREADS = int(NUM_THREADS)
-
-if OBJ_MEAN_KB is None:
-    logging.critical("Missing environment variable OBJ_MEAN_KB")
-    missing_var = True
-elif not OBJ_MEAN_KB.isdigit():
-    logging.critical("OBJ_MEAN_KB is not an integer value")
-    missing_var = True
-else:
-    OBJ_MEAN_KB = int(OBJ_MEAN_KB)
-
-if OBJ_STDDEV_KB is None:
-    logging.critical("Missing environment variable OBJ_STDDEV_KB")
-    missing_var = True
-elif not OBJ_STDDEV_KB.isdigit():
-    logging.critical("OBJ_STDDEV_KB is not an integer value")
-    missing_var = True
-else:
-    OBJ_STDDEV_KB = int(OBJ_STDDEV_KB)
+OBJ_MEAN_KB = getenv("OBJ_MEAN_KB", is_int=True)
+OBJ_STDDEV_KB = getenv("OBJ_STDDEV_KB", is_int=True)
 
 
-if missing_var:
+if bad_env_var:
     logging.critical("Exiting early")
     sys.exit(1)
 

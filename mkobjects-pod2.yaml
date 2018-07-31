@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: mkobjects-pod
 spec:
-  replicas: 3
+  replicas: 10
   selector:
     matchLabels:
       app: mkobjects
@@ -18,9 +18,9 @@ spec:
         imagePullPolicy: Always
         resources:
           requests:
-            cpu: "150m"
+            cpu: "300m"
           limits:
-            cpu: "150m"
+            cpu: "300m"
         env:
           - name: PYTHONUNBUFFERED
             value: "0"
@@ -45,4 +45,4 @@ spec:
           - name: OBJ_STDDEV_KB
             value: "50"
           - name: NUM_THREADS
-            value: "1"
+            value: "4"
