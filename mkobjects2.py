@@ -10,6 +10,7 @@ import sys
 import threading
 import uuid
 
+from multiprocessing.pool import ThreadPool
 from datetime import datetime
 
 import boto
@@ -65,11 +66,13 @@ def run_stress_test(thread_num):
     bucket = s3conn.create_bucket(BUCKET_NAME)
     bucket.set_acl("public-read")
 
+
     while True:
+        st = datetime.now()
         obj_name = uuid.uuid4().hex
         size_in_kb = int(random.normalvariate(OBJ_MEAN_KB, OBJ_STDDEV_KB))
-
         object_contents = os.urandom(1024)*size_in_kb
+        obj_create_time = (datetime.now()-st).total_seconds()
 
         key = Key(bucket, obj_name)
 
@@ -88,7 +91,7 @@ def run_stress_test(thread_num):
 
             csv_data = ",".join(map(str, msg))
 
-            logging.info("Thread %d: %s", thread_num, csv_data)
+            logging.info("Thread %d: %s obj_create:%s", thread_num, csv_data, str(obj_create_time))
 
             sock.sendto(csv_data.encode("utf-8"), (LOG_SERVER_ADDR, LOG_SERVER_PORT))
 
@@ -100,11 +103,8 @@ def run_stress_test(thread_num):
 
 
 def main():
-    threads = [threading.Thread(target=run_stress_test, args=(t,)) for t in range(0, NUM_THREADS)]
-    for thread in threads:
-        thread.start()
-    for thread in threads:
-        thread.join()
+    pool = ThreadPool(processes=NUM_THREADS)
+    pool.map(run_stress_test, range(0, NUM_THREADS))
 
 if __name__ == "__main__":
     main()
