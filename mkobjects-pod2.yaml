@@ -20,7 +20,7 @@ spec:
           requests:
             cpu: "100m"
           limits:
-            cpu: "200m"
+            cpu: "120m"
         env:
           - name: PYTHONUNBUFFERED
             value: "0"
@@ -45,4 +45,4 @@ spec:
           - name: OBJ_STDDEV_KB
             value: "50"
           - name: NUM_THREADS
-            value: "8"
+            value: "4"
