@@ -26,10 +26,13 @@ LOG_SERVER_PORT = 5050
 
 bad_env_var = False
 
-def getenv(name, is_int=False):
+def getenv(name, is_int=False, default=None):
     global bad_env_var
     value = os.environ.get(name)
     if value is None:
+        if default is not None:
+            logging.info("Using default {} = {}".format(name, default))
+            return default
         logging.critical("Missing environment variable {}".format(name))
         bad_env_var = True
     elif is_int:
@@ -43,6 +46,7 @@ def getenv(name, is_int=False):
 
 ENDPOINT_HOSTNAME = getenv("ENDPOINT_HOSTNAME")
 ENDPOINT_PORT = getenv("ENDPOINT_PORT", is_int=True)
+IS_SECURE = getenv("IS_SECURE", is_int=True, default=1)
 BUCKET_NAME = getenv("BUCKET_NAME")
 NUM_THREADS = getenv("NUM_THREADS", is_int=True)
 
@@ -61,6 +65,7 @@ def run_stress_test(thread_num):
 
     s3conn = S3Connection(host=ENDPOINT_HOSTNAME,
                           port=ENDPOINT_PORT,
+                          is_secure=IS_SECURE,
                           calling_format=boto.s3.connection.OrdinaryCallingFormat())
 
     bucket = s3conn.create_bucket(BUCKET_NAME)
