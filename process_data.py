@@ -17,6 +17,8 @@ if not op.isfile(data_file):
     print("File does not exist")
     sys.exit(0)
 
+if not op.isdir("plots"):
+    os.mkdir("plots")
 
 just_filename = op.basename(data_file)
 just_name = op.splitext(just_filename)[0]
