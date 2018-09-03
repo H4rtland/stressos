@@ -81,8 +81,8 @@ def run_stress_test(thread_num):
 
         key = Key(bucket, obj_name)
 
+        start_time = datetime.now()
         try:
-            start_time = datetime.now()
             key.set_contents_from_string(object_contents)
             end_time = datetime.now()
             elapsed = (end_time-start_time).total_seconds()
@@ -92,7 +92,8 @@ def run_stress_test(thread_num):
                    ENDPOINT_HOSTNAME,
                    BUCKET_NAME,
                    size_in_kb*1024,
-                   elapsed]
+                   elapsed,
+                   ""]
 
             csv_data = ",".join(map(str, msg))
 
@@ -101,7 +102,17 @@ def run_stress_test(thread_num):
             sock.sendto(csv_data.encode("utf-8"), (LOG_SERVER_ADDR, LOG_SERVER_PORT))
 
         except Exception as e:
+            elapsed = (end_time-start_time).total_seconds()
             logging.error("Thread %d: %s", thread_num, str(e))
+            msg = [NODE,
+                   datetime.timestamp(start_time),
+                   ENDPOINT_HOSTNAME,
+                   BUCKET_NAME,
+                   -1,
+                   elapsed,
+                   str(e)]
+            sock.sendto(csv_data.encode("utf-8"), (LOG_SERVER_ADDR, LOG_SERVER_PORT))
+
 
 
 
