@@ -59,7 +59,7 @@ if bad_env_var:
     logging.critical("Exiting early")
     sys.exit(1)
 
-logging.info("VERSION 1.2")
+logging.info("VERSION 1.3")
 
 
 def run_stress_test(thread_num):
@@ -85,6 +85,7 @@ def run_stress_test(thread_num):
 
         def fake_should_retry(response, chunked_transfer=False):
             logging.info("Got response status %d", response.status)
+            logging.info("Response: %s", str(dir(response)))
             if 200 <= response.status <= 299:
                 return True # doesn't retry, just finishes normally (I think)
             raise Exception("HTTP response not 200->299, failing")
