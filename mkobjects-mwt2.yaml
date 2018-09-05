@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: mkobjects-pod
 spec:
-  replicas: 500
+  replicas: 250
   selector:
     matchLabels:
       app: mkobjects
@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: mkobjects-container
-        image: thartland/stressos:latest
+        image: thartland/stressos:lancs
         imagePullPolicy: Always
         resources:
           requests:
@@ -27,22 +27,24 @@ spec:
           - name: AWS_ACCESS_KEY_ID
             valueFrom:
               secretKeyRef:
-                name: ralcreds
+                name: mwt2creds
                 key: AWS_ACCESS_KEY_ID
           - name: AWS_SECRET_ACCESS_KEY
             valueFrom:
               secretKeyRef:
-                name: ralcreds
+                name: mwt2creds
                 key: AWS_SECRET_ACCESS_KEY
           - name: BUCKET_NAME
             value: "tgh_stressos"
           - name: ENDPOINT_HOSTNAME
-            value: "s3.echo.stfc.ac.uk"
+            value: "ceph-s3.mwt2.org"
           - name: ENDPOINT_PORT
-            value: "443"
+            value: "80"
           - name: OBJ_MEAN_KB
             value: "2000"
           - name: OBJ_STDDEV_KB
             value: "0"
           - name: NUM_THREADS
-            value: "8"
+            value: "4"
+          - name: IS_SECURE
+            value: "0"

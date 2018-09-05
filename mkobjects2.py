@@ -16,6 +16,7 @@ from datetime import datetime
 import boto
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
+from boto.exception import S3ResponseError
 
 logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s", datefmt="%Y/%m/%d %H:%M:%S", level=logging.INFO)
 
@@ -58,6 +59,7 @@ if bad_env_var:
     logging.critical("Exiting early")
     sys.exit(1)
 
+logging.info("VERSION 1.2")
 
 
 def run_stress_test(thread_num):
@@ -81,6 +83,14 @@ def run_stress_test(thread_num):
 
         key = Key(bucket, obj_name)
 
+        def fake_should_retry(response, chunked_transfer=False):
+            logging.info("Got response status %d", response.status)
+            if 200 <= response.status <= 299:
+                return True # doesn't retry, just finishes normally (I think)
+            raise Exception("HTTP response not 200->299, failing")
+            return False
+        key.should_retry = fake_should_retry
+
         start_time = datetime.now()
         try:
             key.set_contents_from_string(object_contents)
@@ -102,6 +112,7 @@ def run_stress_test(thread_num):
             sock.sendto(csv_data.encode("utf-8"), (LOG_SERVER_ADDR, LOG_SERVER_PORT))
 
         except Exception as e:
+            end_time = datetime.now()
             elapsed = (end_time-start_time).total_seconds()
             logging.error("Thread %d: %s", thread_num, str(e))
             msg = [NODE,
@@ -110,7 +121,8 @@ def run_stress_test(thread_num):
                    BUCKET_NAME,
                    -1,
                    elapsed,
-                   str(e)]
+                   str(e).strip("\n")]
+            csv_data = ",".join(map(str, msg))
             sock.sendto(csv_data.encode("utf-8"), (LOG_SERVER_ADDR, LOG_SERVER_PORT))
 
 
