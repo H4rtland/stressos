@@ -1,7 +1,17 @@
+"""
+Processes several CSV data files.
+
+Those CSV files should have the .yaml deployment file used to generate that stress test data
+copied next to it with the same file name but keeping the .yaml extension.
+
+i.e data_2018_09_10_15_50_12.csv should have an associated data_2018_09_10_15_50_12.yaml
+"""
+
 import os
 import os.path as op
 import sys
 from operator import itemgetter
+import datetime
 
 import yaml
 import numpy as np
@@ -55,7 +65,7 @@ for data_file in data_files:
     csv_data = pd.read_csv(data_file, index_col=False, header=0)
     csv_data.columns = ["hostname", "timestamp", "endpoint", "bucket", "size", "duration", "error"]
 
-    print("Errors in {}: {}".format(basename, sum(csv_data["size"] < 0)))
+    print("Errors in {} ({}): {}".format(basename, hostname, sum(csv_data["size"] < 0)))
     data[hostname] = csv_data
 
 def plot_durations():
@@ -69,10 +79,11 @@ def plot_durations():
     xaxis_range = (0, ax_max)
 
     for hostname, csv_data in data.items():
+        csv_data = csv_data[csv_data["size"] >= 0]
         ax.hist(csv_data["duration"], bins=bins, range=xaxis_range, histtype="step", linewidth=2, fill=False, log=True, label="{} {}p*{}t".format(hostname, data_metadata[hostname]["pods"], data_metadata[hostname]["threads"]))
         
 
-    ax.set_xlabel("Transfer duration (seconds)")
+    ax.set_xlabel("Transfer duration for successes (seconds)")
     ax.set_ylabel("Number of transfers")
     ax.set_xlim(xaxis_range)
     ax.legend()
@@ -115,6 +126,7 @@ def plot_separated_durations():
     ax.legend()
     fig.tight_layout()
     plt.savefig("{}_sep_durhist.png".format(plot_output_prefix))
+
 
 def plot_rate():
     fig, ax = plt.subplots()
@@ -232,6 +244,70 @@ def requests_per_second():
     plt.savefig("{}_reqsps.png".format(plot_output_prefix))
 
 
+def plot_errors():
+    for hostname in data:
+        fig, ax = plt.subplots()
+        csv_data = data[hostname]
+        csv_data = csv_data.replace(np.nan, "Success", regex=True)
+        #if len(csv_data[csv_data["size"] < 0]) == 0:
+        #    print("Skipping {}, no errors".format(hostname))
+        #    continue
+
+        start_time = csv_data["timestamp"].min()
+        end_time = csv_data["timestamp"].max()
+        precision = 10
+
+        print(hostname, set(csv_data["error"]))
+        errs = list(set(csv_data["error"]))
+        errs = sorted(errs, key=lambda x: (x!="Success", x))
+        for errtype in errs:
+            errsps = []
+            csv_err = csv_data[csv_data["error"] == errtype]
+
+            for t in range(int(start_time), int(end_time), precision):
+                time_into_test = t-int(start_time)
+                filtered_data = csv_err[csv_err["timestamp"].between(t, t+precision)]
+                #filtered_data = filtered_data[filtered_data["size"] < 0]
+                total_errs = len(filtered_data)
+                errs_per_s = total_errs/precision
+                errsps.append((time_into_test, errs_per_s))
+
+            ax.plot(*zip(*errsps), label="{} {}p*{}t {}".format(hostname, data_metadata[hostname]["pods"], data_metadata[hostname]["threads"], errtype))
+
+        ax.set_xlabel("Time into stress test (seconds)")
+        ax.set_ylabel("Requests per second")
+        ax.grid(True)
+        ax.set_ylim(bottom=0)
+        ax.legend()
+        ax.text(0, 1.01, "{} - {} (UTC)".format(datetime.datetime.utcfromtimestamp(start_time), datetime.datetime.utcfromtimestamp(end_time)), transform=ax.transAxes)
+        fig.tight_layout()
+        plt.savefig("{}_{}_errsps.png".format(plot_output_prefix, hostname.replace(".", "_")))
+
+
+def plot_error_durations():
+    ax_max = 5
+    for hostname, csv_data in data.items():
+        if len(csv_data[csv_data["size"] < 0]) == 0:
+            continue
+        fil = csv_data[csv_data["size"] < 0]
+        ax_max = max(ax_max, int(max(fil["duration"])+2))
+    fig, ax = plt.subplots()
+    ax.grid(True)
+    bins = 100
+    xaxis_range = (0, ax_max)
+
+    for hostname, csv_data in data.items():
+        filtered_data = csv_data[csv_data["size"] < 0]
+        ax.hist(filtered_data["duration"], bins=bins, range=xaxis_range, histtype="step", linewidth=2, fill=False, log=True, label="{} {}p*{}t".format(hostname, data_metadata[hostname]["pods"], data_metadata[hostname]["threads"]))
+        
+
+    ax.set_xlabel("Transfer duration for errors (seconds)")
+    ax.set_ylabel("Number of error transfers")
+    ax.set_xlim(xaxis_range)
+    ax.legend()
+    fig.tight_layout()
+    plt.savefig("{}_errdurhist.png".format(plot_output_prefix))
+
 plot_durations()
 #plot_rate()
 #plot_separate_durations()
@@ -239,3 +315,5 @@ plot_durations()
 #transfer_speed_per_pod()
 requests_per_second()
 plot_separated_durations()
+plot_errors()
+plot_error_durations()

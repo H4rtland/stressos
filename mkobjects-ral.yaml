@@ -41,7 +41,7 @@ spec:
           - name: ENDPOINT_PORT
             value: "443"
           - name: OBJ_MEAN_KB
-            value: "2000"
+            value: "0"
           - name: OBJ_STDDEV_KB
             value: "0"
           - name: NUM_THREADS

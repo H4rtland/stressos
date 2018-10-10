@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: mkobjects-pod
 spec:
-  replicas: 250
+  replicas: 500
   selector:
     matchLabels:
       app: mkobjects
@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: mkobjects-container
-        image: thartland/stressos:lancs
+        image: thartland/stressos:latest
         imagePullPolicy: Always
         resources:
           requests:
@@ -41,8 +41,8 @@ spec:
           - name: ENDPOINT_PORT
             value: "443"
           - name: OBJ_MEAN_KB
-            value: "2000"
+            value: "0"
           - name: OBJ_STDDEV_KB
             value: "0"
           - name: NUM_THREADS
-            value: "4"
+            value: "8"

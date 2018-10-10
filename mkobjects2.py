@@ -2,6 +2,7 @@ import argparse
 import random
 import logging
 import os
+import os.path as op
 import csv
 import socket
 import time
@@ -59,36 +60,42 @@ if bad_env_var:
     logging.critical("Exiting early")
     sys.exit(1)
 
-logging.info("VERSION 1.3")
-
+logging.info("VERSION 1.11")
 
 def run_stress_test(thread_num):
+    logging.info("Thread %d starting", thread_num)
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     s3conn = S3Connection(host=ENDPOINT_HOSTNAME,
                           port=ENDPOINT_PORT,
                           is_secure=IS_SECURE,
                           calling_format=boto.s3.connection.OrdinaryCallingFormat())
+    
+    logging.info("Thread %d made connection", thread_num)
 
-    bucket = s3conn.create_bucket(BUCKET_NAME)
-    bucket.set_acl("public-read")
+    #bucket = s3conn.create_bucket(BUCKET_NAME)
+    #bucket.set_acl("public-read")
+    bucket = s3conn.get_bucket(BUCKET_NAME)
 
-
+    logging.info("Thread %d starting loop", thread_num)
     while True:
         st = datetime.now()
         obj_name = uuid.uuid4().hex
-        size_in_kb = int(random.normalvariate(OBJ_MEAN_KB, OBJ_STDDEV_KB))
-        object_contents = os.urandom(1024)*size_in_kb
+        if OBJ_MEAN_KB == 0:
+            size_in_kb = 0
+            object_contents = b""
+        else:
+            size_in_kb = int(random.normalvariate(OBJ_MEAN_KB, OBJ_STDDEV_KB))
+            object_contents = os.urandom(1024)*size_in_kb
         obj_create_time = (datetime.now()-st).total_seconds()
 
         key = Key(bucket, obj_name)
 
         def fake_should_retry(response, chunked_transfer=False):
             logging.info("Got response status %d", response.status)
-            logging.info("Response: %s", str(dir(response)))
             if 200 <= response.status <= 299:
                 return True # doesn't retry, just finishes normally (I think)
-            raise Exception("HTTP response not 200->299, failing")
+            raise Exception("HTTP response %d %s" % (response.status, response.reason))
             return False
         key.should_retry = fake_should_retry
 
